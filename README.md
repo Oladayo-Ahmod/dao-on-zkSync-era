@@ -1,1 +1,0 @@
-# dao-on-zkSync-era
