@@ -1,4 +1,5 @@
-![zkSync](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/31a75e5e-30a7-41cc-89d5-15e954f7339e)
+
+![zkSync](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/b616b748-2af6-4e66-8150-ef55514eb127)
 
 # A Comprehensive Guide for Establishing a Decentralised Autonomous Organisation (DAO) on zkSync Era
 
@@ -70,7 +71,7 @@ After successful installations, you can remove all generated files that we don't
 
 Lastly, open your `contracts` folder and create a new file `DAO.sol` inside it and paste the code below in the file.
 
-```
+```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
@@ -615,7 +616,7 @@ function getDeployer()external view returns(address){
 ## Section 7: Compile and Deploy
 
 Run `npm run compile` to compile your smart contract. If it is compiled successfully, your terminal should produce a result like below
-![compile](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/4d95b1c7-b2a8-412e-8448-0f975de27a0c)
+![compile](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/8d316e21-38b4-453e-ae9e-40f005051924)
 
 Now, let's go ahead and deploy our smart contract. Two things should be in place before you run your deployment script.
 The first thing is `.env`, your private key should be already set and the second thing is that your account should hold some faucets to deploy to the zkSync sepolia testnet.
@@ -637,7 +638,7 @@ export default async function () {
 ```
 
 Finally, run `npm run deploy` to deploy your contract. You should see a similar result below if it is deployed successfully.
-![4w-social-env](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/d213bad0-bb26-4768-86af-996a9ace6e2d)
+![deploy](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/7d50ba77-8544-4cdd-95aa-23220f948e9e)
 
 
 Congratulations!
