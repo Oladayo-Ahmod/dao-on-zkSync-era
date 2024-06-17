@@ -853,9 +853,8 @@ Finally, let's run the tests by running the below commands in the terminal:
 
 `npm run test`
 
-If the tests is successful, you should see a similar result to the below where all tests cases passed.
-
-
+If the tests are successful, you should see a similar result to the one below where all test cases passed.
+![final-test](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/94870226-c3be-4685-8c95-7315b165de49)
 
 
 ## Section 8: Compile and Deploy
