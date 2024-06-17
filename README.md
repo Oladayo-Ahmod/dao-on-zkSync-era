@@ -883,3 +883,6 @@ export default async function () {
 
 Finally, run `npm run deploy` to deploy your contract. You should see a similar result below if it is deployed successfully.
 ![deploy](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/7d50ba77-8544-4cdd-95aa-23220f948e9e)
+
+
+Congratulations!
