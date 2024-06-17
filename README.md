@@ -1,4 +1,5 @@
-![zkSync](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/31a75e5e-30a7-41cc-89d5-15e954f7339e)
+
+![zkSync](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/b616b748-2af6-4e66-8150-ef55514eb127)
 
 # A Comprehensive Guide for Establishing a Decentralised Autonomous Organisation (DAO) on zkSync Era
 
@@ -30,7 +31,9 @@ This tutorial provides a step-by-step method for creating and implementing a Dec
   - [6.5 Contributor Status](#65-contributor-status)
   - [6.6 Contributor Balance](#66-contributor-balance)
   - [6.7 Deployer Address](#67-deployer-address)
-- [Section 7: Compile and Deploy](#section-7-compile-and-deploy)
+- [Section 7: Writing Tests](#section-7-writing-tests)
+- [Section 8: Compile and Deploy](#section-6-compile-and-deploy)
+
   
  
 ## Section 1: Recognising the Fundamentals
@@ -70,7 +73,7 @@ After successful installations, you can remove all generated files that we don't
 
 Lastly, open your `contracts` folder and create a new file `DAO.sol` inside it and paste the code below in the file.
 
-```
+```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
@@ -612,10 +615,252 @@ function getDeployer()external view returns(address){
     }
 ```
 
-## Section 7: Compile and Deploy
+### Section 7: Writing Tests
+
+Next, let's proceed to writning tests for the DAO contract.
+
+First, let's import the packages needed to run the tests.
+
+```typescript
+import { expect,assert } from 'chai';
+import { Contract, Wallet } from "zksync-ethers";
+import { getWallet, deployContract, LOCAL_RICH_WALLETS } from '../deploy/utils';
+import * as ethers from "ethers";
+
+```
+
+The tests are organized into several categories:
+
+- **Stakeholders and Contributors**: Tests related to contributions and balances of stakeholders and contributors.
+- **Proposals**: Tests for creating and retrieving proposals.
+- **Voting**: Tests for performing upvotes and downvotes, and retrieving proposal votes.
+- **Payments**: Test for paying the beneficiary.
+
+
+### Stakeholders and Contributors
+
+1. **Stakeholder Contributes and Retrieves Balance**:
+
+   Tests if a stakeholder can contribute to the DAO and retrieve their balance.
+
+   ```js
+   it("stakeholder contributes and retrieves balance", async () => {
+       let price = ethers.parseEther('1');
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: price });
+       let balance = await (DAO.connect(stakeholder) as Contract).getStakeholdersBalances();
+       assert.equal(balance, price.toString());
+   });
+   ```
+
+2. **Contributor Contributes and Retrieves Balance**:
+
+   Tests if a contributor can contribute to the DAO and retrieve their balance.
+
+   ```js
+   it("collaborator contributes and retrieves balance", async () => {
+       let price = ethers.parseEther('0.05');
+       await (DAO.connect(contributor) as Contract).contribute({ value: price });
+       let balance = await (DAO.connect(contributor) as Contract).getContributorsBalance();
+       assert.equal(balance, price.toString());
+   });
+   ```
+
+3. **Check Stakeholder Status**:
+
+   Tests if a stakeholder status can be checked.
+
+   ```js
+   it("checks stakeholder status", async () => {
+       let price = ethers.parseEther('1');
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: price });
+       let stakeholderStatus = await (DAO.connect(stakeholder) as Contract).stakeholderStatus();
+       assert.equal(stakeholderStatus, true);
+   });
+   ```
+
+4. **Check Contributor Status**:
+
+   Tests if a contributor status can be checked.
+
+   ```js
+   it("checks contributors status", async () => {
+       let price = ethers.parseEther('0.05');
+       await (DAO.connect(contributor) as Contract).contribute({ value: price });
+       let contributorStatus = await (DAO.connect(contributor) as Contract).isContributor();
+       assert.equal(contributorStatus, true);
+   });
+   ```
+
+### Proposals
+
+1. **Create Proposal**:
+
+   Tests if a proposal can be created.
+
+   ```js
+   it("creates proposal", async () => {
+       let amount = ethers.parseEther('1');
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: amount });
+       let proposalTx = await (DAO.connect(stakeholder) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       
+       const receipt = await proposalTx.wait();
+       const event = receipt.logs.find((log) => {
+           const parsedLog = DAO.interface.parseLog(log);
+           return parsedLog?.name === 'ProposalAction';
+       });
+
+       assert.equal(event.args[2], 'Proposal Raised');
+       assert.equal(event.args[3], beneficiary.address);
+       assert.equal(event.args[4], amount.toString());
+   });
+   ```
+
+2. **Retrieve Proposal**:
+
+   Tests if a proposal can be retrieved.
+
+   ```js
+   it("retrieves proposal", async () => {
+       let amount = ethers.parseEther('1');
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: amount });
+       await (DAO.connect(stakeholder) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       let firstProposal = await DAO.getProposals(0);
+       expect(firstProposal.id.toString()).to.equal('0');
+       expect(firstProposal.title).to.equal('title');
+       expect(firstProposal.description).to.equal('desc');
+       expect(firstProposal.beneficiary).to.equal(beneficiary.address);
+       expect(firstProposal.amount.toString()).to.equal(amount.toString());
+   });
+   ```
+
+### Voting
+
+1. **Perform Upvote**:
+
+   Tests if a stakeholder can upvote a proposal.
+
+   ```js
+   it("performs upvote", async () => {
+       let price = ethers.parseEther('0.5');
+       let amount = ethers.parseEther('4');
+       
+       // Stakeholder contributes to the DAO
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: price });
+       
+       // Stakeholder creates a proposal
+       await (DAO.connect(stakeholder) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       
+       // Stakeholder performs an upvote on the proposal
+       let voteTx = await (DAO.connect(stakeholder) as Contract).performVote(0, true);
+       
+       // Wait for the transaction to be mined and get the receipt
+       const receipt = await voteTx.wait();
+       
+       // Find the 'VoteAction' event in the logs
+       const event = receipt.logs.find((log) => {
+           const parsedLog = DAO.interface.parseLog(log);
+           return parsedLog?.name === 'VoteAction';
+       });
+   
+       // Assertions to check the event details
+       expect(event.args[7]).to.equal(true);
+       expect(event.args[4].toString()).to.equal(amount.toString());
+       expect(event.args[3]).to.equal(beneficiary.address);
+   });
+   ```
+
+2. **Perform Downvote**:
+
+   Tests if a stakeholder can downvote a proposal.
+
+   ```js
+   it("performs downvote", async () => {
+       let price = ethers.parseEther('0.5');
+       let amount = ethers.parseEther('4');
+       
+       // Stakeholder contributes to the DAO
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: price });
+       
+       // Stakeholder creates a proposal
+       await (DAO.connect(stakeholder) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       
+       // Stakeholder performs a downvote on the proposal
+       let voteTx = await (DAO.connect(stakeholder) as Contract).performVote(0, false);
+       
+       // Wait for the transaction to be mined and get the receipt
+       const receipt = await voteTx.wait();
+       
+       // Find the 'VoteAction' event in the logs
+       const event = receipt.logs.find((log) => {
+           const parsedLog = DAO.interface.parseLog(log);
+           return parsedLog?.name === 'VoteAction';
+       });
+
+       expect(event.args[7]).to.equal(false);
+       expect(event.args[4].toString()).to.equal(amount.toString());
+       expect(event.args[3]).to.equal(beneficiary.address);
+   });
+   ```
+
+3. **Retrieve Proposal Vote**:
+
+   Tests if a vote on a proposal can be retrieved.
+
+   ```js
+   it("retrieves proposal vote", async () => {
+       let price = ethers.parseEther('0.5');
+       let amount = ethers.parseEther('4');
+       await (DAO.connect(stakeholder) as Contract).contribute({ value: price });
+       await (DAO.connect(stakeholder) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       await (DAO.connect(stakeholder) as Contract).performVote(0, true);
+       let vote = await DAO.getProposalVote(0);
+       assert.equal(vote[0].voter, stakeholder.address);
+   });
+   ```
+
+### Payments
+
+1. **Pay Beneficiary**:
+
+   Tests if the beneficiary is paid correctly.
+
+   ```js
+   it("pays beneficiary", async () => {
+       let previousBalance, currentBalance;
+       let price = ethers.parseEther('0.5');
+       let amount = ethers.parseEther('0.02');
+       
+       await (DAO.connect(deployer) as Contract).contribute({ value: price });
+       await (DAO.connect(deployer) as Contract).createProposal('title', 'desc', beneficiary.address, amount);
+       await (DAO.connect(deployer) as Contract).performVote(0, true);
+       previousBalance = await DAO.getTotalBalance();
+       const processPaymentTx = await (DAO.connect(deployer) as Contract).payBeneficiary(0);
+       const receipt = await processPaymentTx.wait();
+       const event = receipt.logs.find((log) => {
+           const parsedLog = DAO.interface.parseLog(log);
+           return parsedLog?.name === 'ProposalAction';
+       });
+
+       assert.equal(event.args[3], beneficiary.address);
+       currentBalance = await DAO.getTotalBalance();
+       assert.equal(previousBalance.toString(), price.toString());
+       assert.equal(currentBalance.toString(), ethers.parseEther('0.48').toString());
+   });
+   ```
+
+Finally, let's run the tests by running the below commands in the terminal:
+
+`npm run test`
+
+If the tests is successful, you should see a similar result to the below where all tests cases passed.
+
+
+
+
+## Section 8: Compile and Deploy
 
 Run `npm run compile` to compile your smart contract. If it is compiled successfully, your terminal should produce a result like below
-![compile](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/4d95b1c7-b2a8-412e-8448-0f975de27a0c)
+![compile](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/8d316e21-38b4-453e-ae9e-40f005051924)
 
 Now, let's go ahead and deploy our smart contract. Two things should be in place before you run your deployment script.
 The first thing is `.env`, your private key should be already set and the second thing is that your account should hold some faucets to deploy to the zkSync sepolia testnet.
@@ -637,7 +882,4 @@ export default async function () {
 ```
 
 Finally, run `npm run deploy` to deploy your contract. You should see a similar result below if it is deployed successfully.
-![4w-social-env](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/d213bad0-bb26-4768-86af-996a9ace6e2d)
-
-
-Congratulations!
+![deploy](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/7d50ba77-8544-4cdd-95aa-23220f948e9e)
