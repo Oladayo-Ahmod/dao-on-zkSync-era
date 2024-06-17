@@ -33,6 +33,7 @@ This tutorial provides a step-by-step method for creating and implementing a Dec
   - [6.7 Deployer Address](#67-deployer-address)
 - [Section 7: Writing Tests](#section-7-writing-tests)
 - [Section 8: Compile and Deploy](#section-6-compile-and-deploy)
+- [Section 9 Frontend Integration with Next.js](#section-9-frontend-integration-with-nextjs)
 
   
  
@@ -885,4 +886,105 @@ Finally, run `npm run deploy` to deploy your contract. You should see a similar 
 ![deploy](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/7d50ba77-8544-4cdd-95aa-23220f948e9e)
 
 
-Congratulations!
+## Section 9 Frontend Integration with Next.js
+
+This section provides a step-by-step guide to integrate the DAO contract with a Next.js frontend.
+
+### Setting Up the Next.js Project
+
+1. Create a new Next.js project:
+
+   ```sh
+   npx create-next-app@latest dao-frontend
+   cd dao-frontend
+   ```
+
+2. Install necessary dependencies:
+
+   ```sh
+   npm install ethers
+   ```
+
+### Integrating the DAO Contract
+
+1. Create a new file `utils/dao.js` to set up the DAO contract interaction :
+
+   ```js
+   import { ethers } from 'ethers';
+   import DAO_ABI from './DAO_ABI.json'; // Import the ABI of your DAO contract
+
+   const DAO_ADDRESS = 'YOUR_DAO_CONTRACT_ADDRESS'; // Replace with your DAO contract address
+
+   export const getDAOContract = () => {
+       if (typeof window.ethereum !== 'undefined') {
+           const provider = new ethers.BrowserProvider(window.ethereum);
+           const signer = provider.getSigner();
+           const contract = new ethers.Contract(DAO_ADDRESS, DAO_ABI, signer);
+           return contract;
+       } else {
+           console.error('Ethereum wallet is not available');
+           return null;
+       }
+   };
+   ```
+
+2. Create a new file `pages/index.js` for the main interface:
+
+   ```jsx
+   import { useEffect, useState } from 'react';
+   import { ethers } from 'ethers';
+   import { getDAOContract } from '../utils/dao';
+
+   export default function Home() {
+       const [stakeholder, setStakeholder] = useState(null);
+       const [contributor, setContributor] = useState(null);
+       const [balance, setBalance] = useState('0');
+
+       useEffect(() => {
+           const loadBlockchainData = async () => {
+               const daoContract = getDAOContract();
+               if (daoContract) {
+                   const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                   const balance = await daoContract.getStakeholdersBalances();
+                   setStakeholder(accounts[0]);
+                   setBalance(ethers.formatEther(balance));
+               }
+           };
+           loadBlockchainData();
+       }, []);
+
+       const handleContribute = async (amount) => {
+           const daoContract = getDAOContract();
+           if (daoContract) {
+               const tx = await daoContract.contribute({ value: ethers.parseEther(amount) });
+               await tx.wait();
+               const balance = await daoContract.getStakeholdersBalances();
+               setBalance(ethers.formatEther(balance));
+           }
+       };
+
+       return (
+           <div>
+               <h1>DAO Interface</h1>
+               <p>Stakeholder: {stakeholder}</p>
+               <p>Balance: {balance} ETH</p>
+               <button onClick={() => handleContribute('1')}>Contribute 1 ETH</button>
+           </div>
+       );
+   }
+   ```
+
+3. Create the `DAO_ABI.json` file in the `utils` directory, and paste the ABI of your DAO contract into it.
+
+### Running the Next.js Application
+
+1. Start the Next.js development server:
+
+   ```sh
+   npm run dev
+   ```
+
+2. Open your browser and navigate to `http://localhost:3000` to interact with the DAO contract through the frontend interface.
+
+
+Congratulations! You have the made it to the end of the DAO tutorial, Smart contract, Testing, Deployment and Frontend Integration.
