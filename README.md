@@ -629,7 +629,35 @@ import { getWallet, deployContract, LOCAL_RICH_WALLETS } from '../deploy/utils';
 import * as ethers from "ethers";
 
 ```
+Next, create a `describe` function `DAO` which holds all the methods and variables needed to run the tests.
 
+```typescript
+describe("DAO",()=>{
+    
+})
+```
+
+Inside, the `describe` function, declare variables to hold wallets and initialize them in the `beforeEach` method for
+deployment.
+
+```typescript
+    let DAO : Contract
+    let stakeholder : Wallet
+    let contributor : Wallet
+    let deployer : Wallet
+    let beneficiary : Wallet
+
+    beforeEach(async ()=>{
+        stakeholder = getWallet(LOCAL_RICH_WALLETS[0].privateKey);
+        contributor = getWallet(LOCAL_RICH_WALLETS[1].privateKey);
+        deployer = getWallet(LOCAL_RICH_WALLETS[2].privateKey);
+        beneficiary = getWallet(LOCAL_RICH_WALLETS[3].privateKey);
+        
+        DAO = await deployContract("DAO", [], { wallet: deployer, silent: true });
+    })
+```
+
+Next, let's begin writing tests. 
 The tests are organized into several categories:
 
 - **Stakeholders and Contributors**: Tests related to contributions and balances of stakeholders and contributors.
@@ -640,6 +668,13 @@ The tests are organized into several categories:
 
 ### Stakeholders and Contributors
 
+Go ahead and create a describe function `stakeholders and contributor` and write the below related tests inside it.
+
+```typescript
+describe("stakeholders and contributors", ()=>{
+
+})
+``` 
 1. **Stakeholder Contributes and Retrieves Balance**:
 
    Tests if a stakeholder can contribute to the DAO and retrieve their balance.
@@ -694,6 +729,14 @@ The tests are organized into several categories:
 
 ### Proposals
 
+Go ahead and create a describe function `proposal` and write the below related tests inside it.
+
+```typescript
+describe("proposal", ()=>{
+
+})
+``` 
+
 1. **Create Proposal**:
 
    Tests if a proposal can be created.
@@ -735,6 +778,14 @@ The tests are organized into several categories:
    ```
 
 ### Voting
+
+Go ahead and create a describe function `voting and payment` and write the below related tests inside it.
+
+```typescript
+describe("voting and payment", ()=>{
+
+})
+``` 
 
 1. **Perform Upvote**:
 
@@ -819,14 +870,8 @@ The tests are organized into several categories:
    });
    ```
 
-### Payments
-
-1. **Pay Beneficiary**:
-
-   Tests if the beneficiary is paid correctly.
-
-   ```js
-   it("pays beneficiary", async () => {
+    ```js
+    it("pays beneficiary", async () => {
        let previousBalance, currentBalance;
        let price = ethers.parseEther('0.5');
        let amount = ethers.parseEther('0.02');
@@ -848,6 +893,8 @@ The tests are organized into several categories:
        assert.equal(currentBalance.toString(), ethers.parseEther('0.48').toString());
    });
    ```
+  
+
 
 Finally, let's run the tests by running the below commands in the terminal:
 
@@ -929,47 +976,91 @@ This section provides a step-by-step guide to integrate the DAO contract with a 
 2. Create a new file `pages/index.js` for the main interface:
 
    ```jsx
-   import { useEffect, useState } from 'react';
-   import { ethers } from 'ethers';
-   import { getDAOContract } from '../utils/dao';
+  "use client";
 
-   export default function Home() {
-       const [stakeholder, setStakeholder] = useState(null);
-       const [contributor, setContributor] = useState(null);
-       const [balance, setBalance] = useState('0');
+    import { useEffect, useState } from 'react';
+    import { ethers } from 'ethers';
+    import { getDAOContract } from '../utils/dao';
+    import 'bootstrap/dist/css/bootstrap.min.css';
 
-       useEffect(() => {
-           const loadBlockchainData = async () => {
-               const daoContract = getDAOContract();
-               if (daoContract) {
-                   const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                   const balance = await daoContract.getStakeholdersBalances();
-                   setStakeholder(accounts[0]);
-                   setBalance(ethers.formatEther(balance));
-               }
-           };
-           loadBlockchainData();
-       }, []);
+    const Home = () => {
+    const [stakeholder, setStakeholder] = useState<string | null>(null);
+    const [balance, setBalance] = useState<string>('0');
+    const [daoBalance, setDaoBalance] = useState<string>('0');
+    const [stakeholderStatus, setStakeholderStatus] = useState(false);
+    const [contributorStatus, setContributorStatus] = useState(false);
+    const [contributeAmount, setContributeAmount] = useState<string>('0');
 
-       const handleContribute = async (amount) => {
-           const daoContract = getDAOContract();
-           if (daoContract) {
-               const tx = await daoContract.contribute({ value: ethers.parseEther(amount) });
-               await tx.wait();
-               const balance = await daoContract.getStakeholdersBalances();
-               setBalance(ethers.formatEther(balance));
-           }
-       };
+  useEffect(() => {
+    const loadBlockchainData = async () => {
+      try {
+        const daoContract = getDAOContract();
+        if (daoContract && typeof window !== 'undefined') {
+          const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
+          const balance = await daoContract.getStakeholdersBalances();
+          const daoTotalBalance = await daoContract.getTotalBalance();
+          const isStakeholder = await daoContract.stakeholderStatus();
+          const isContributor = await daoContract.isContributor();
 
-       return (
-           <div>
-               <h1>DAO Interface</h1>
-               <p>Stakeholder: {stakeholder}</p>
-               <p>Balance: {balance} ETH</p>
-               <button onClick={() => handleContribute('1')}>Contribute 1 ETH</button>
-           </div>
-       );
-   }
+          setStakeholder(accounts[0]);
+          setBalance(ethers.formatEther(balance));
+          setDaoBalance(ethers.formatEther(daoTotalBalance));
+          setStakeholderStatus(isStakeholder);
+          setContributorStatus(isContributor);
+        }
+      } catch (error) {
+        console.error("Error loading blockchain data", error);
+      }
+    };
+    loadBlockchainData();
+  }, []);
+
+  const handleContribute = async () => {
+    try {
+      const daoContract = getDAOContract();
+      if (daoContract && contributeAmount) {
+        const tx = await daoContract.contribute({ value: ethers.parseEther(contributeAmount) });
+        await tx.wait();
+        const balance = await daoContract.getStakeholdersBalances();
+        setBalance(ethers.formatEther(balance));
+      }
+    } catch (error) {
+      console.error("Error contributing", error);
+    }
+  };
+
+  return (
+    <div className="bg-light min-vh-100 d-flex flex-column align-items-center justify-content-center">
+      <h1 className="mb-5">DAO Interface</h1>
+      <div className="card shadow p-4" style={{ width: '400px' }}>
+        <div className="card-body">
+          <h5 className="card-title">Stakeholder</h5>
+          <p className="card-text">{stakeholder}</p>
+          <h5 className="card-title">Balance</h5>
+          <p className="card-text">{balance} ETH</p>
+          <h5 className="card-title">Total DAO Balance</h5>
+          <p className="card-text">{daoBalance} ETH</p>
+          <h5 className="card-title">Status</h5>
+          <p className="card-text">
+            {stakeholderStatus ? 'Stakeholder' : contributorStatus ? 'Contributor' : 'New User'}
+          </p>
+          <div className="input-group mb-3">
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Contribute min 0.1ETH to be a stakeholder"
+              value={contributeAmount}
+              onChange={(e) => setContributeAmount(e.target.value)}
+            />
+            <button className="btn btn-primary" onClick={handleContribute}>Contribute</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Home;
    ```
 
 3. Create the `DAO_ABI.json` file in the `utils` directory, and paste the ABI of your DAO contract into it.

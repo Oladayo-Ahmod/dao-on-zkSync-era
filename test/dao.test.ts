@@ -84,7 +84,7 @@ describe("DAO",()=>{
 
     })
 
-    describe("voting",()=>{
+    describe("voting and payment",()=>{
         it("performs upvote", async () => {
             let price = ethers.parseEther('0.5');
             let amount = ethers.parseEther('4');
@@ -134,6 +134,7 @@ describe("DAO",()=>{
             expect(events.args[4]).to.equal(amount)
             expect(events.args[3]).to.equal(beneficiary.address)
         })
+        
         it("retrieves proposal vote", async ()=>{
             let price = ethers.parseEther('0.5');
             let amount = ethers.parseEther('4');
@@ -143,33 +144,35 @@ describe("DAO",()=>{
             let vote =  await DAO.getProposalVote(0)
             assert.equal(vote[0].voter,stakeholder.address)
         })
+
+        it("pays beneficiary", async()=>{
+            let previousBalance, currentBalance
+            let price = ethers.parseEther('0.5');
+            let amount = ethers.parseEther('0.02');
+            await (DAO.connect(deployer) as Contract).contribute({value:price})
+            await (DAO.connect(deployer) as Contract).createProposal('title','desc',beneficiary.address,amount)
+            await (DAO.connect(deployer) as Contract).performVote(0,true)
+            await DAO.getTotalBalance().then((result)=>{
+            previousBalance = result
+            })
+            const processPayment = await (DAO.connect(deployer) as Contract).payBeneficiary(0)
+            const receipt = await processPayment.wait()
+            const events = receipt.logs.find((log:any) => {
+                const parsedLog = DAO.interface.parseLog(log);
+                return parsedLog?.name === 'ProposalAction';
+            });
+    
+            assert.equal(events.args[3],beneficiary.address)
+            await DAO.getTotalBalance().then((result)=>{
+                currentBalance = result
+            })
+           assert.equal(previousBalance,price)
+           assert.equal(currentBalance,ethers.parseEther('0.48'))
+    
+            
+        })
     })
 
-    it("pays beneficiary", async()=>{
-        let previousBalance, currentBalance
-        let price = ethers.parseEther('0.5');
-        let amount = ethers.parseEther('0.02');
-        await (DAO.connect(deployer) as Contract).contribute({value:price})
-        await (DAO.connect(deployer) as Contract).createProposal('title','desc',beneficiary.address,amount)
-        await (DAO.connect(deployer) as Contract).performVote(0,true)
-        await DAO.getTotalBalance().then((result)=>{
-        previousBalance = result
-        })
-        const processPayment = await (DAO.connect(deployer) as Contract).payBeneficiary(0)
-        const receipt = await processPayment.wait()
-        const events = receipt.logs.find((log:any) => {
-            const parsedLog = DAO.interface.parseLog(log);
-            return parsedLog?.name === 'ProposalAction';
-        });
-
-        assert.equal(events.args[3],beneficiary.address)
-        await DAO.getTotalBalance().then((result)=>{
-            currentBalance = result
-        })
-       assert.equal(previousBalance,price)
-       assert.equal(currentBalance,ethers.parseEther('0.48'))
-
-        
-    })
+    
     
 })
