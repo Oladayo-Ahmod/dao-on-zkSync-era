@@ -1075,5 +1075,10 @@ This section provides a step-by-step guide to integrate the DAO contract with a 
 
 2. Open your browser and navigate to `http://localhost:3000` to interact with the DAO contract through the frontend interface.
 
+If everything works well, you should see a similar page like below :
+![DAO-interface](https://github.com/Oladayo-Ahmod/dao-on-zkSync-era/assets/57647734/5b55c481-5d85-4fe2-b43a-a21793eb1b10)
 
-Congratulations! You have the made it to the end of the DAO tutorial, Smart contract, Testing, Deployment and Frontend Integration.
+
+
+
+Congratulations! You have made it to the end of the DAO tutorial, Smart contract, Testing, Deployment and Frontend Integration.
